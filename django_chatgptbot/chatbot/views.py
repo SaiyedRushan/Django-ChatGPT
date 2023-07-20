@@ -6,6 +6,8 @@ from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib import auth
 from django.contrib.auth.models import User
+from .models import Chat
+from django.utils import timezone
 
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -29,12 +31,21 @@ def ask_openai(message):
 
 
 def chatbot(request):
+    chats = Chat.objects.filter(user=request.user).order_by("created_at")
+
     if request.method == "POST":
         body = json.loads(request.body)
         response = ask_openai(body["message"])
+        chat = Chat(
+            user=request.user,
+            message=body["message"],
+            response=response,
+            created_at=timezone.now(),
+        )
+        chat.save()
         return JsonResponse({"response": response, "message": body["message"]})
 
-    return render(request, "chatbot.html")
+    return render(request, "chatbot.html", {"chats": chats})
 
 
 def login(request):
@@ -94,4 +105,4 @@ def register(request):
 
 def logout(request):
     auth.logout(request)
-    return render(request, "login.html")
+    return redirect("login")
