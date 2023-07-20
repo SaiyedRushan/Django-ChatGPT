@@ -30,6 +30,25 @@ def ask_openai(message):
     return answer
 
 
+def ask_dalle(prompt):
+    response = openai.Image.create(prompt=prompt, n=1, size="1024x1024")
+    image_url = response["data"][0]["url"]
+    return image_url
+
+
+def index(request):
+    return redirect("chatbot")
+
+
+def image(request):
+    if request.method == "POST":
+        body = json.loads(request.body)
+        image_url = ask_dalle(body["prompt"])
+        return JsonResponse({"image_url": image_url, "prompt": body["prompt"]})
+
+    return render(request, "image.html")
+
+
 def chatbot(request):
     chats = Chat.objects.filter(user=request.user).order_by("created_at")
 
